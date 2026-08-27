@@ -1,0 +1,15 @@
+info:
+  name: 04. Suggestion
+  type: folder
+  seq: 5
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    # Suggestion
+
+    Typeahead / autocomplete over taxonomy. **Tenant-scoped**
+    (`x-tenant-id` + `accept-language`), versioned `x-api-version: 1`.
+  type: text/markdown

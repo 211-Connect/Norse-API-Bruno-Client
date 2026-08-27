@@ -1,0 +1,37 @@
+info:
+  name: "3. Predict Search Intent (AI)"
+  type: http
+  seq: 3
+
+http:
+  method: get
+  url: "{{baseUrl}}/search/predict?query=i%20need%20help%20with%20rent&top_k=150"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: query
+      value: i need help with rent
+      type: query
+    - name: top_k
+      value: "150"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Predict Search Intent
+
+  `GET /search/predict` — classifies a free-text query into taxonomy intents via
+  the ML Broker. `query` required (min length 1); `top_k` optional (default 150).

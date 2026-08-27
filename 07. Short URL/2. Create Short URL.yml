@@ -1,0 +1,33 @@
+info:
+  name: "2. Create Short URL"
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{baseUrl}}/short-url"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "url": "https://example.org/some/long/path?with=params"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Create Short URL
+
+  `POST /short-url` — get-or-create a short URL for `url`.

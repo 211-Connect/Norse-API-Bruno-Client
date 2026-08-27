@@ -1,0 +1,41 @@
+info:
+  name: 1. Search Organizations
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/organization?query=food bank&page=1&limit=10"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: query
+      value: food bank
+      type: query
+    - name: page
+      value: "1"
+      type: query
+    - name: limit
+      value: "10"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Search Organizations
+
+  `GET /organization` — organization name prefix search. `query`, `page` (≥1),
+  `limit` (1–50, default 10).

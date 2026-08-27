@@ -1,0 +1,40 @@
+info:
+  name: "4. Batch Get Resources"
+  type: http
+  seq: 4
+
+http:
+  method: post
+  url: "{{baseUrl}}/resource/batch"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "ids": [
+          "00000000-0000-0000-0000-000000000000"
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Batch Get Resources
+
+  `POST /resource/batch` — fetch up to 100 resources at once (partial success).
+  `ids`: string[] (1–100, each a UUID). CDN-cached 15 min.

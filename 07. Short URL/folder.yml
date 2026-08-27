@@ -1,0 +1,15 @@
+info:
+  name: 07. Short URL
+  type: folder
+  seq: 8
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    # Short URL
+
+    Create and resolve short URLs. **Not** tenant-scoped, but the gateway still
+    requires your `X-API-Key`. Versioned `x-api-version: 1`.
+  type: text/markdown

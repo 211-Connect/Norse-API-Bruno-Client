@@ -1,0 +1,36 @@
+info:
+  name: "1. Get Suggestions"
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/suggestion?query=food&page=1"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: query
+      value: food
+      type: query
+    - name: page
+      value: "1"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Get Suggestions
+
+  `GET /suggestion` — typeahead taxonomy suggestions. `query` (≤500), `page` (≥1).

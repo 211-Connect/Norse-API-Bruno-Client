@@ -1,0 +1,15 @@
+info:
+  name: 05. Organization
+  type: folder
+  seq: 6
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    # Organization
+
+    Organization typeahead search. **Tenant-scoped**
+    (`x-tenant-id` + `accept-language`), versioned `x-api-version: 1`.
+  type: text/markdown

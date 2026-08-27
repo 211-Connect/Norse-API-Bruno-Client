@@ -1,0 +1,35 @@
+info:
+  name: 1. Get Resource by ID
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/resource/:id"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: id
+      value: da4896f3-ba78-516f-b3f3-f376b320222c
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Get Resource by ID
+
+  `GET /resource/:id` — fetch a transformed resource by its (transformed) id.
+  Set the `id` path param. CDN-cached 15 min.

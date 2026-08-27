@@ -1,0 +1,13 @@
+info:
+  name: "00. Health"
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit
+
+docs: |-
+  # Health
+
+  Liveness probe. No tenant and no version header — but every request through
+  the gateway still requires your `X-API-Key`.

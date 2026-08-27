@@ -1,0 +1,35 @@
+info:
+  name: 3. Get Taxonomy Terms
+  type: http
+  seq: 3
+
+http:
+  method: get
+  url: "{{baseUrl}}/taxonomy/term?terms=BH-8600"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: terms
+      value: BH-8600
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Get Taxonomy Terms
+
+  `GET /taxonomy/term` — resolve exact taxonomy codes. Repeat `terms` per code
+  (e.g. `?terms=BM-1400&terms=BM-1700`).

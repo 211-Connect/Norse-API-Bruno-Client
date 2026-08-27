@@ -1,0 +1,35 @@
+info:
+  name: 2. Get Resource by Original ID
+  type: http
+  seq: 2
+
+http:
+  method: get
+  url: "{{baseUrl}}/resource/original/:id"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: id
+      value: "91382554"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Get Resource by Original ID
+
+  `GET /resource/original/:id` — fetch by the *original* (pre-transform) resource
+  id. CDN-cached 15 min.

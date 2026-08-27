@@ -1,0 +1,12 @@
+name: Gateway
+variables:
+  - name: baseUrl
+    value: https://services.c211.io/norse-api/v1
+  - name: acceptLanguage
+    value: en
+  - secret: true
+    name: tenantId
+    description: Tenant UUID, sent as x-tenant-id on tenant-scoped routes. Provide your own; never commit this value.
+  - secret: true
+    name: SERVICES_APIKEY
+    description: Your API key from the Connect211 dashboard. Sent as the X-API-Key header. Never commit this value.

@@ -1,0 +1,61 @@
+info:
+  name: "2. Search Resources (POST)"
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{baseUrl}}/search?query=food&geo_type=boundary&limit=25"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: query
+      value: food
+      type: query
+    - name: geo_type
+      value: boundary
+      type: query
+    - name: limit
+      value: "25"
+      type: query
+  body:
+    type: json
+    data: |-
+      {
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [-120.85, 47.70],
+              [-120.60, 47.70],
+              [-120.60, 47.80],
+              [-120.85, 47.80],
+              [-120.85, 47.70]
+            ]
+          ]
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Search Resources (POST)
+
+  Same query contract as GET, plus a GeoJSON `geometry` body for boundary search
+  (`geo_type=boundary`). Requires `Content-Type: application/json` (else `400`).
+  Returns `200`. `geometry` accepts Point/MultiPoint/LineString/MultiLineString/
+  Polygon/MultiPolygon.

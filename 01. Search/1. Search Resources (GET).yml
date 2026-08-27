@@ -1,0 +1,68 @@
+info:
+  name: 1. Search Resources (GET)
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/search?query=legal aid&query_type=hybrid&page=1&limit=25&sort=relevance"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: query
+      value: legal aid
+      type: query
+    - name: query_type
+      value: hybrid
+      type: query
+    - name: page
+      value: "1"
+      type: query
+    - name: limit
+      value: "25"
+      type: query
+    - name: sort
+      value: relevance
+      type: query
+    - name: coords
+      value: -120.740135,47.751076
+      type: query
+      disabled: true
+    - name: distance
+      value: "25"
+      type: query
+      disabled: true
+    - name: taxonomy
+      value: BM-1400,BM-1700
+      type: query
+      disabled: true
+    - name: geo_type
+      value: proximity
+      type: query
+      disabled: true
+    - name: age
+      value: "30"
+      type: query
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Search Resources (GET)
+
+  Primary resource search. Enable the disabled params (coords/distance/taxonomy/
+  geo_type/age) as needed. `limit` must be 25–300. For polygon/boundary search use
+  **Search Resources (POST)**.

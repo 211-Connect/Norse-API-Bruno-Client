@@ -1,0 +1,40 @@
+info:
+  name: "3. Get Resource Titles"
+  type: http
+  seq: 3
+
+http:
+  method: post
+  url: "{{baseUrl}}/resource/titles"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "ids": [
+          "00000000-0000-0000-0000-000000000000"
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Get Resource Titles
+
+  `POST /resource/titles` — display titles for up to 100 resource UUIDs.
+  `ids`: string[] (1–100, each a UUID).

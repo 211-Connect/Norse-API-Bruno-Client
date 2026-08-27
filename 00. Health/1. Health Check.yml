@@ -1,0 +1,23 @@
+info:
+  name: "1. Health Check"
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/health"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Health Check
+
+  `GET /health` — returns `{ status: 'up' }` when the service is live.

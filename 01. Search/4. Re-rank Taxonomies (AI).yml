@@ -1,0 +1,38 @@
+info:
+  name: "4. Re-rank Taxonomies (AI)"
+  type: http
+  seq: 4
+
+http:
+  method: get
+  url: "{{baseUrl}}/search/re-rank?need_weights=%7B%22HO-300%22%3A0.9%2C%22IC-330%22%3A0.08%7D&top_k=150"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: need_weights
+      value: "{\"HO-300\":0.9,\"IC-330\":0.08}"
+      type: query
+    - name: top_k
+      value: "150"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Re-rank Taxonomies
+
+  `GET /search/re-rank` — re-ranks taxonomy hits given a need-weight map.
+  `need_weights` is a **URL-encoded JSON** object (required, max 10000 chars),
+  e.g. `{"HO-300":0.9,"IC-330":0.08}`. `top_k` optional (default 150).

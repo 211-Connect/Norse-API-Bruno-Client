@@ -1,0 +1,16 @@
+info:
+  name: 06. Geocoding
+  type: folder
+  seq: 7
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    # Geocoding
+
+    Mapbox/Opencage geocoding wrappers. **Not** tenant-scoped, but the gateway
+    still requires your `X-API-Key`. Versioned `x-api-version: 1`. Responses
+    cached ~1 month.
+  type: text/markdown

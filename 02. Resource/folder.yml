@@ -1,0 +1,16 @@
+info:
+  name: 02. Resource
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    # Resource
+
+    Single-resource and batch lookups against Elasticsearch. **Tenant-scoped**
+    (`x-tenant-id` + `accept-language`), **versioned** `x-api-version: 1`.
+    Every request through the gateway requires your `X-API-Key`.
+  type: text/markdown

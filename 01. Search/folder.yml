@@ -1,0 +1,36 @@
+info:
+  name: "01. Search"
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit
+
+docs: |-
+  # Search
+
+  Resource search backed by Elasticsearch, plus the AI classification/re-rank
+  proxy to the ML Broker.
+
+  **Tenant-scoped** — every request sends `x-tenant-id: {{tenantId}}` and
+  `accept-language: {{acceptLanguage}}`. **Versioned** `x-api-version: 1`.
+  Every request through the gateway requires your `X-API-Key`.
+
+  ## `GET /search` query parameters (all optional)
+
+  | Param | Type | Default | Notes |
+  |---|---|---|---|
+  | `query` | string | `''` | Free text, or comma list for taxonomy. |
+  | `query_type` | enum | `text` | `text` \| `taxonomy` \| `more_like_this` \| `hybrid`. |
+  | `page` | int | `1` | 1-based. |
+  | `coords` | string | — | `"lng,lat"`, e.g. `-120.740135,47.751076`. |
+  | `filters` | object | `{}` | `Record<string,string\|string[]>` (URL-encode JSON). |
+  | `taxonomy` | string[] | `[]` | Comma list, e.g. `BM-1400,BM-1700`. |
+  | `distance` | int (mi) | `0` | Only applies with `coords`. |
+  | `age` | int | — | Optional age filter. |
+  | `limit` | int | `25` | Min **25**, max **300**. |
+  | `geo_type` | enum | — | `boundary` \| `proximity`. `boundary` needs POST geometry. |
+  | `sort` | enum | `relevance` | `relevance` \| `distance` \| `name` \| `organization`. |
+
+  `GET` with `geo_type=boundary` returns `400` — use `POST /search` with a GeoJSON
+  `geometry` body instead.

@@ -1,0 +1,33 @@
+info:
+  name: "2. Reverse Geocode"
+  type: http
+  seq: 2
+
+http:
+  method: get
+  url: "{{baseUrl}}/geocoding/reverse?coordinates=-74.006%2C40.7128&provider=mapbox"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+  params:
+    - name: coordinates
+      value: "-74.006,40.7128"
+      type: query
+    - name: provider
+      value: mapbox
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Reverse Geocode
+
+  `GET /geocoding/reverse` — coordinates → address. `coordinates` required as
+  `"longitude,latitude"`; `provider` `mapbox`|`opencage` (default mapbox).

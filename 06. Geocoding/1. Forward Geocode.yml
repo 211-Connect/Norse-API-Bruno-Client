@@ -1,0 +1,36 @@
+info:
+  name: "1. Forward Geocode"
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/geocoding/forward?address=123%20Main%20St%2C%20New%20York%2C%20NY&provider=mapbox&limit=5"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+  params:
+    - name: address
+      value: "123 Main St, New York, NY"
+      type: query
+    - name: provider
+      value: mapbox
+      type: query
+    - name: limit
+      value: "5"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Forward Geocode
+
+  `GET /geocoding/forward` — address → coordinates. `address` required;
+  `provider` `mapbox`|`opencage` (default mapbox); `limit` 1–10 (default 5).

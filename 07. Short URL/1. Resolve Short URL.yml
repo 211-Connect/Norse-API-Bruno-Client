@@ -1,0 +1,29 @@
+info:
+  name: "1. Resolve Short URL"
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/short-url/:id"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+  params:
+    - name: id
+      value: SHORT_URL_ID
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Resolve Short URL
+
+  `GET /short-url/:id` — resolve a short URL id to its target.

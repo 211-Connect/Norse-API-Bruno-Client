@@ -1,0 +1,33 @@
+info:
+  name: "2. Get Suggestion Terms"
+  type: http
+  seq: 2
+
+http:
+  method: get
+  url: "{{baseUrl}}/suggestion/term?terms=BM-1400"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: terms
+      value: BM-1400
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  # Get Suggestion Terms
+
+  `GET /suggestion/term` — taxonomy terms for the given codes (repeat `terms`).
