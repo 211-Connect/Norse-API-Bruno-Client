@@ -206,13 +206,18 @@ curl -s -H "X-API-Key: $SERVICES_APIKEY" -H "x-tenant-id: $TENANT_ID" \
   "items": [ { "id": "cccccccc-cccc-cccc-cccc-cccccccccccc", "code": "BH-3700", "name": "Housing Counseling" } ] }
 ```
 
-**b) Search by the chosen code(s)** — pass `taxonomy` (comma-separated) and set
-`query_type=taxonomy`:
+**b) Search by the chosen code(s)** — put the code(s) in **`query`** (comma-separated)
+with **`query_type=taxonomy`**:
 
 ```bash
 curl -s "${H[@]}" \
-  "$BASE/search?taxonomy=BH-3700&query_type=taxonomy&page=1&limit=25"
+  "$BASE/search?query=BH-3700&query_type=taxonomy&page=1&limit=25"
 ```
+
+> The codes go in **`query`**, not the `taxonomy=` param. `query_type=taxonomy`
+> tells the API to treat `query` as HSIS codes. (The separate `taxonomy=` param
+> is a *scope filter* layered on a text/hybrid query — see the
+> [parameter reference](#search-parameter-reference-search-get--post).)
 
 `GET /suggestion?query=food` is a related helper that returns
 `{ taxonomies[], organizations[] }` for mixed typeahead.
@@ -481,28 +486,63 @@ curl -s "${H[@]}" \
 # → { "hsis_taxonomies": ["BH-1800.1500-330", "BH-1800", "..."] }
 ```
 
-Then run the search with those codes:
+Then search with those codes — codes go in **`query`** with `query_type=taxonomy`:
 
 ```bash
 curl -s "${H[@]}" \
-  "$BASE/search?taxonomy=BH-1800.1500-330,BH-1800&query_type=taxonomy&page=1&limit=25"
+  "$BASE/search?query=BH-1800.1500-330,BH-1800&query_type=taxonomy&page=1&limit=25"
 ```
 
 For the **auto-search** scenarios (Step 2), skip Steps 3–4 and go straight to
-`GET /search?taxonomy=<hsis_taxonomies>&query_type=taxonomy`.
+`GET /search?query=<hsis_taxonomies>&query_type=taxonomy`.
+
+### Prefer to skip the follow-up entirely? (simpler integrations)
+
+You don't have to build the clarify UI. From simplest to most tailored:
+
+1. **Skip `predict` altogether — use `query_type=hybrid`.** One call, natural
+   language in, ranked results out ([Recipe 1](#recipe-1--find-resources-search)).
+   This is the recommended default and needs no follow-up logic.
+
+2. **Call `predict`, then just use its `hsis_taxonomies`** — the model's overall
+   best guess across every need it detected — and ignore `scenario`/`options`:
+
+   ```bash
+   # one predict + one search, no follow-up, even for a clarify_* result
+   curl -s "${H[@]}" \
+     "$BASE/search?query=BH-8400.3000,YV-6500,BH-0500.7000&query_type=taxonomy&limit=25"
+   ```
+
+3. **Auto-select the highest-likelihood need** instead of asking. Take the top
+   option (`options[0]`, or the first `pre_selected`), re-rank on just that one,
+   and search — committing to a single need rather than the blended guess:
+
+   ```bash
+   # re-rank on the single top need, then search the returned codes
+   curl -s "${H[@]}" \
+     "$BASE/search/re-rank?need_weights=%7B%22HO-300%22%3A1%7D&top_k=150"
+   # → { "hsis_taxonomies": [...] }  → GET /search?query=<those codes>&query_type=taxonomy
+   ```
+
+The follow-up UI exists to *disambiguate* when the model is unsure or sees several
+needs; auto-picking trades that precision for a one-shot flow. If you only want
+simplicity, option 1 (`hybrid`) is almost always the right call.
 
 ### The whole workflow at a glance
 
 ```
 GET /search/predict
         │
-        ├─ scenario = search / search_and_notify_*  ─────────────► GET /search?taxonomy=<hsis_taxonomies>
+        ├─ scenario = search / search_and_notify_*  ─────────────► GET /search?query=<hsis_taxonomies>&query_type=taxonomy
         │                                                          (notify_* → also show an advisory)
         │
         └─ scenario = clarify_low_info / clarify_multiple_labels
                  │  show options[] (pre-check pre_selected)
                  ▼  user answers the follow-up
-           GET /search/re-rank?need_weights={code:weight}  ─────► GET /search?taxonomy=<hsis_taxonomies>
+           GET /search/re-rank?need_weights={code:weight}  ─────► GET /search?query=<hsis_taxonomies>&query_type=taxonomy
+
+  (Simpler: skip predict and use query_type=hybrid; or use predict's
+   hsis_taxonomies directly without the follow-up — see below.)
 ```
 
 ---
@@ -511,11 +551,11 @@ GET /search/predict
 
 | Param | Type | Default | Notes |
 |---|---|---|---|
-| `query` | string | `""` | Free text; or comma HSIS codes with `query_type=taxonomy`. |
-| `query_type` | enum | `text` | **`hybrid`** recommended (semantic + keyword). Also `text` (exact/agency, being phased out) · `taxonomy` · `more_like_this`. |
+| `query` | string | `""` | Free text; **or comma-separated HSIS codes when `query_type=taxonomy`** (that's how you search *by* codes). |
+| `query_type` | enum | `text` | **`hybrid`** recommended (semantic + keyword). Also `text` (exact/agency, being phased out) · `taxonomy` (treats `query` as HSIS codes) · `more_like_this`. |
 | `page` | int ≥1 | `1` | 1-based. |
 | `limit` | int | `25` | **25–300** (below 25 errors). |
-| `taxonomy` | string/CSV | — | HSIS codes, e.g. `BM-1400,BM-1700`. |
+| `taxonomy` | string/CSV | — | Optional **scope filter** to narrow a text/hybrid search to these HSIS codes (e.g. `BM-1400,BM-1700`). To search purely *by* codes, use `query`+`query_type=taxonomy` instead. |
 | `coords` | string | — | **`lng,lat`**, e.g. `-73.9857,40.7484`. |
 | `distance` | int (mi) | `0` | Only with `coords`. |
 | `geo_type` | enum | — | `proximity` · `boundary` (boundary → POST body geometry). |
