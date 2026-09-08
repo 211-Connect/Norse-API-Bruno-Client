@@ -12,8 +12,7 @@ docs:
 
     HSIS taxonomy tree lookups. **Tenant-scoped** (`x-tenant-id` + `accept-language`).
 
-    - **Search (v1)** returns full Elasticsearch hits.
-    - **Search (v2)** returns a slimmer `{ id, name, code }` shape — send
+    - **Search** returns a slimmer `{ id, name, code }` shape — send
       `x-api-version: 2`.
     - **Get Terms** resolves exact taxonomy codes.
   type: text/markdown

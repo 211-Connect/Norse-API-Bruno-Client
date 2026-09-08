@@ -5,6 +5,10 @@ through the Connect211 **API gateway**. It lets partners and developers explore
 and test the public Norse API surface — search, resources, taxonomy,
 suggestions, organizations, geocoding, and short URLs — using a single API key.
 
+> **New here?** See **[USAGE.md](./USAGE.md)** for a task-oriented walkthrough —
+> how to find resources and pull their details, with copy-paste `curl` examples
+> (search, taxonomy typeahead, detail lookup, batch, geo, and AI-assisted search).
+
 ## Getting started
 
 1. Install [Bruno](https://www.usebruno.com/) and open this folder as a collection.
@@ -33,11 +37,21 @@ of them for you from environment variables:
 `SERVICES_APIKEY` is declared as an **empty secret** and is **never** committed to
 this repo — each user pastes their own key locally in Bruno.
 
-### Getting an API key
+### Getting your API key and tenant ID
 
-Create an **API Consumer** and a key (with the *norse-api* permission scope) in
-the Connect211 admin dashboard, then paste the key's value into `SERVICES_APIKEY`.
-Ask your Connect211 contact for dashboard access if you don't have it.
+To receive your **API key** and the correct **tenant ID(s)**, email
+**help@connect211.com** with the subject line:
+
+```
+Developer API Key Provisioning - {tenant name}
+```
+
+CC **david@connect211.com** as well — especially for questions. Sending to
+**help@connect211.com** is what matters, though: it opens a ticket so a human is
+guaranteed to prioritize a follow-up to every request (even when David is busy).
+
+Once you receive them, paste the key into `SERVICES_APIKEY` and the tenant UUID
+into `tenantId` in the **Gateway** environment.
 
 ## Environment variables
 
@@ -52,9 +66,9 @@ Ask your Connect211 contact for dashboard access if you don't have it.
 
 - **Base URL includes the gateway prefix** — requests are relative to
   `https://services.c211.io/norse-api/v1` (e.g. `GET …/v1/search`).
-- **Versioning is header-based** via `x-api-version`. Taxonomy has both a v1 and
-  a v2 search (v2 returns a slimmer `{ id, name, code }`); each request sends the
-  right version for you.
+- **Versioning is header-based** via `x-api-version`. Taxonomy search uses
+  `x-api-version: 2` (returns a slimmer `{ id, name, code }`); each request sends
+  the right version for you.
 - **Tenant scoping.** Search, Resource, Taxonomy, Suggestion, and Organization
   require `x-tenant-id` (a UUID) and `accept-language`. Geocoding, Short URL, and
   Health are not tenant-scoped, but still require `X-API-Key`.
@@ -66,7 +80,7 @@ Ask your Connect211 contact for dashboard access if you don't have it.
 | `00. Health` | Liveness. |
 | `01. Search` | Resource search + AI predict/re-rank. |
 | `02. Resource` | Single + batch resource lookups. |
-| `03. Taxonomy` | HSIS taxonomy search (v1 & v2) + term lookup. |
+| `03. Taxonomy` | HSIS taxonomy search + term lookup. |
 | `04. Suggestion` | Typeahead suggestions. |
 | `05. Organization` | Organization typeahead. |
 | `06. Geocoding` | Forward/reverse geocoding. |

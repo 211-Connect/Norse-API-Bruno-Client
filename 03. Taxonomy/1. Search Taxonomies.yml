@@ -1,5 +1,5 @@
 info:
-  name: "1. Search Taxonomies (v1)"
+  name: "1. Search Taxonomies"
   type: http
   seq: 1
 
@@ -10,7 +10,7 @@ http:
     - name: X-API-Key
       value: "{{SERVICES_APIKEY}}"
     - name: x-api-version
-      value: "1"
+      value: "2"
     - name: x-tenant-id
       value: "{{tenantId}}"
     - name: accept-language
@@ -22,10 +22,6 @@ http:
     - name: page
       value: "1"
       type: query
-    - name: code
-      value: ""
-      type: query
-      disabled: true
   auth: inherit
 
 settings:
@@ -35,7 +31,7 @@ settings:
   maxRedirects: 5
 
 docs: |-
-  # Search Taxonomies (v1)
+  # Search Taxonomies
 
-  `GET /taxonomy` (`x-api-version: 1`) — prefix search by name/code, 10/page.
-  Returns full ES hits. `query` (≤500), `page` (≥1). `code` is deprecated.
+  `GET /taxonomy` with `x-api-version: 2` — prefix search by name/code. Returns a
+  simplified `{ id, name, code }` list. `query` (≤500), `page` (≥1).
