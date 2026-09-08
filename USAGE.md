@@ -155,7 +155,7 @@ Response (trimmed) — note the **double `hits`** nesting and the id fields:
 
 For a vague natural-language need where you'd rather *classify* the intent and
 possibly ask the user to clarify before searching, see the
-[AI need-classification flow](#recipe-6--ai-need-classification-advanced).
+[AI need-classification flow](#recipe-6--ai-need-classification--the-clarification-workflow-advanced).
 
 > **Building something new?** `GET` and `POST /search` are equivalent for basic
 > search, but new geographic and custom-filtering features arrive through the
@@ -403,32 +403,107 @@ GeoJSON `Polygon` directly instead of a bbox rectangle.
 
 ---
 
-## Recipe 6 — AI need-classification (advanced)
+## Recipe 6 — AI need-classification & the clarification workflow (advanced)
 
 > For most "AI search" needs, prefer **`query_type=hybrid`**
-> ([Recipe 1](#recipe-1--find-resources-search)) — one call, no extra steps.
-> Use this flow only when you want to *classify* a vague natural-language need
-> into taxonomy codes and possibly ask the user to clarify before searching.
+> ([Recipe 1](#recipe-1--find-resources-search)) — one call, no follow-up.
+> Use this flow when you want the ML broker to *classify* a natural-language
+> query into needs and, **when the input is ambiguous, ask the user a follow-up
+> question before searching** — the behavior Connect211's own app implements.
 
-Turn a natural-language need into taxonomy codes, then search with them.
+### Step 1 — Classify the query
 
 ```bash
-curl -s "${H[@]}" "$BASE/search/predict?query=i%20need%20rent%20help&top_k=150"
+curl -s "${H[@]}" "$BASE/search/predict?query=i%20need%20help%20with%20rent%20and%20food&top_k=150"
 ```
 
 ```jsonc
 {
-  "scenario": "search",                 // or clarify_* — ask the user to narrow
-  "hsis_taxonomies": ["BH-3800.4900", "BH-3500", "..."],
-  "options": [ { "code": "BH-3500", "score": 0.91, "pre_selected": true, "results_count": 42 } ]
+  "scenario": "clarify_multiple_labels",
+  "hsis_taxonomies": ["BH-8400.3000", "YV-6500", "..."],   // best-guess HSIS codes (may be empty)
+  "options": [                                             // candidate NEEDS, sorted by score desc
+    { "code": "HO-300", "score": 0.9589, "pre_selected": true,  "results_count": 959  },
+    { "code": "EM-180", "score": 0.7108, "pre_selected": true,  "results_count": 508  },
+    { "code": "FO-200", "score": 0.4762, "pre_selected": false, "results_count": 1088 },
+    { "code": "IC-330", "score": 0.1896, "pre_selected": false, "results_count": 318  }
+  ]
 }
 ```
 
-- `scenario: "search"` → feed `hsis_taxonomies` straight into
-  `GET /search?taxonomy=<codes>&query_type=taxonomy`.
-- `scenario: "clarify_*"` → present `options[]` and let the user pick.
-- `GET /search/re-rank?need_weights=<url-encoded JSON>&top_k=150` re-orders codes
-  when the user weights competing needs.
+### Step 2 — Branch on `scenario`
+
+The `scenario` tells you **whether to ask a follow-up question or just search**:
+
+| `scenario` | Meaning | What to do |
+|---|---|---|
+| `search` | Confident, single interpretation. | **Search now** with `hsis_taxonomies`. No follow-up. |
+| `search_and_notify_low_confidence` | Searched, but the model isn't sure. | **Search now**; show a non-blocking "we weren't sure — refine?" notice. |
+| `search_and_notify_low_info` | Query too sparse to classify well (`hsis_taxonomies` often empty). | **Search now** (broad / keyword); invite the user to add detail. |
+| `clarify_low_info` | Too little info to search confidently. | **Ask a follow-up** — show `options[]`, let the user pick a need. |
+| `clarify_multiple_labels` | **More than one distinct need detected** (e.g. rent *and* food). | **Ask a follow-up** — let the user pick which need(s) they mean. |
+
+So the rule is simple: **`clarify_*` → ask the user; everything else → search immediately** (the `*_notify_*` variants just add an advisory message).
+
+### Step 3 — Ask the follow-up question (`clarify_*` only)
+
+Present `options[]` as the choices. Each option is a **candidate need**:
+
+| Field | Use in your follow-up UI |
+|---|---|
+| `code` | The need identifier (a top-level need code, e.g. `HO-300`). **The API returns no display label** — you supply it (see note below). |
+| `score` | Model confidence `0–1`. Options come sorted high→low. Connect211's app shows those with `score > 0.1` (top 4, with a "show more"). |
+| `pre_selected` | **Check this option by default.** |
+| `results_count` | Resources available for that need (or `null`). Show as "(959 results)"; consider hiding `0`-result needs. |
+
+> **Labeling the options:** option `code`s are *need categories*, not HSIS terms —
+> they don't resolve through `/taxonomy/term`, and `predict` returns only the code.
+> Maintain your own `code → label` map for the follow-up prompt (Connect211's app
+> keeps a "needs" label table). **Ask help@connect211.com for the current need-code
+> list** for your tenant. If you have no label, fall back to showing the code.
+
+Let the user confirm/adjust the selection (start from the `pre_selected` ones).
+
+### Step 4 — Re-rank on the selection, then search
+
+Turn the chosen needs into `need_weights` and call `re-rank` to get the ordered
+HSIS codes to search with. Connect211's app weights them like this:
+
+| Selection state | Weight |
+|---|---|
+| Selected **and** was `pre_selected` | its `score` |
+| Selected **and** not `pre_selected` | `0.6` |
+| Not selected but was `pre_selected` | `0.1` (kept, down-weighted) |
+
+```bash
+# user kept Housing (was pre_selected) + added Food; Employment left unpicked
+curl -s "${H[@]}" \
+  "$BASE/search/re-rank?need_weights=%7B%22HO-300%22%3A0.9589%2C%22FO-200%22%3A0.6%2C%22EM-180%22%3A0.1%7D&top_k=150"
+# → { "hsis_taxonomies": ["BH-1800.1500-330", "BH-1800", "..."] }
+```
+
+Then run the search with those codes:
+
+```bash
+curl -s "${H[@]}" \
+  "$BASE/search?taxonomy=BH-1800.1500-330,BH-1800&query_type=taxonomy&page=1&limit=25"
+```
+
+For the **auto-search** scenarios (Step 2), skip Steps 3–4 and go straight to
+`GET /search?taxonomy=<hsis_taxonomies>&query_type=taxonomy`.
+
+### The whole workflow at a glance
+
+```
+GET /search/predict
+        │
+        ├─ scenario = search / search_and_notify_*  ─────────────► GET /search?taxonomy=<hsis_taxonomies>
+        │                                                          (notify_* → also show an advisory)
+        │
+        └─ scenario = clarify_low_info / clarify_multiple_labels
+                 │  show options[] (pre-check pre_selected)
+                 ▼  user answers the follow-up
+           GET /search/re-rank?need_weights={code:weight}  ─────► GET /search?taxonomy=<hsis_taxonomies>
+```
 
 ---
 
