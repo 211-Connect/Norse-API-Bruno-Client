@@ -39,6 +39,8 @@ of them for you from environment variables:
 | `accept-language` | `en`, `es`, … | `acceptLanguage` |
 
 - **No key / an invalid key → `401`.**
+- **Missing `x-api-version` → `404 Cannot GET /…`.** The header is required on
+  every route; the 404 looks like a wrong URL but isn't.
 - **Missing `x-tenant-id` → `400 tenant_target_required`.** Every route except
   `/health` needs it — including Geocoding and Short URL, whose *data* is not
   tenant-specific but which still go through the gateway's tenant check.

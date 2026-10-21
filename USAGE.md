@@ -34,7 +34,7 @@ Every request sends four headers:
 |---|---|---|
 | `X-API-Key` | `$SERVICES_APIKEY` | Missing/invalid → `401`. |
 | `x-tenant-id` | `$TENANT_ID` | Required on every route except `/health` (even geocoding / short-url). Missing → `400 tenant_target_required`; a tenant your key lacks → `403 tenant_scope_denied`. |
-| `x-api-version` | `1` | **Versioning is by header, not URL.** |
+| `x-api-version` | `1` | **Required.** Versioning is by header, not URL. Omit it and the route does not resolve: `404 Cannot GET /search`. |
 | `accept-language` | `en`, `es`, … | Drives localized fields. |
 
 > **`POST` needs write access.** The gateway treats every `POST` as a write and
@@ -397,7 +397,7 @@ curl -s "${H[@]}" \
     "type": "coordinates",
     "address": "Brooklyn, New York, United States",
     "coordinates": [-73.9497, 40.6526],                 // [lng, lat] — feed to `coords`
-    "place_type": ["locality"],                          // address | postcode | locality | region | country
+    "place_type": ["locality"],                          // country | region | postcode | district | place | locality | neighborhood | address | poi
     "bbox": [-74.042412, 40.566162, -73.833365, 40.739446], // [minLng, minLat, maxLng, maxLat] — feed to Boundary
     "postcode": "11215", "place": "New York City",
     "district": "Kings County", "region": "New York", "country": "United States"
@@ -444,6 +444,14 @@ curl -s "${H[@]}" \
 > ⚠️ `coords` order is **lng,lat** (GeoJSON convention). Passing `lat,lng`
 > silently returns **zero results** — a common integration bug. `geocoding`
 > output is already `[lng, lat]`, so pass it straight through.
+
+> **`sort=distance` drops relevance entirely.** Hits come back nearest-first
+> with `_score: null`, so a broad query can lead with barely-related records
+> that happen to be close. Under `sort=relevance` (hybrid) distance is only a
+> small part of the score, so the nearest provider can sit deep in the list.
+> If you want *relevant, then nearest*: with `query_type=hybrid`, pair
+> `relevance_cutoff=on` with `sort=distance` — the cutoff is applied as a
+> relevance floor first, and the survivors are then ordered by distance.
 
 ### Boundary — search within an area (polygon)
 
@@ -710,8 +718,11 @@ falling back to English, then the canonical locale.
   > 10,000, `geo_type=boundary` on `GET`).
 - `403 tenant_scope_denied` — your key is not provisioned for that tenant, or
   it is read-only and you sent a `POST`.
-- `404` — resource not found — **most often because you used `_source.id`
-  instead of `service_at_location_id`** (see the gotcha above).
+- `404 Cannot GET /search` (or any route) — you omitted `x-api-version`. The
+  header is required; without it the route does not resolve at all.
+- `404` on `/resource/{id}` — resource not found — **most often because you
+  used `_source.id` instead of `service_at_location_id`** (see the gotcha
+  above).
 - `409` — `GET /organization/service-at-location/{id}` found more than one
   organization carrying that id in the tenant.
 

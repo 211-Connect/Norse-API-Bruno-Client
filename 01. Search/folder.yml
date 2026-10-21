@@ -30,7 +30,7 @@ docs: |-
   | `organization_id` | string | — | Scope to one organization by its stable id (from `/organization` or `/suggestion`). Composes with any `query_type`. |
   | `filters` | object | `{}` | `filters[<facetKey>][<i>]=<value>`. |
   | `age` | int | — | Age eligibility filter. |
-  | `sort` | enum | `relevance` | `relevance` \| `distance` \| `name` \| `organization`. |
+  | `sort` | enum | `relevance` | `relevance` \| `distance` \| `name` \| `organization`. `distance` returns `_score: null` (no relevance at all); for relevant-then-nearest under hybrid, combine `relevance_cutoff=on` with `sort=distance`. |
   | `relevance_cutoff` | enum | `off` | Opt-in. `off` \| `on`. Hybrid only. See requests 5 & 6. |
 
   `GET` with `geo_type=boundary` returns `400` — use `POST /search` with a GeoJSON
