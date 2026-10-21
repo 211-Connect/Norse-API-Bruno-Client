@@ -10,7 +10,7 @@ http:
     - name: X-API-Key
       value: "{{SERVICES_APIKEY}}"
     - name: x-api-version
-      value: "2"
+      value: "1"
     - name: x-tenant-id
       value: "{{tenantId}}"
     - name: accept-language
@@ -33,5 +33,9 @@ settings:
 docs: |-
   # Search Taxonomies
 
-  `GET /taxonomy` with `x-api-version: 2` — prefix search by name/code. Returns a
-  simplified `{ id, name, code }` list. `query` (≤500), `page` (≥1).
+  `GET /taxonomy` — prefix search by name/code. Returns
+  `{ total, page, items: [{ id, code, name }] }`. `query` (≤500), `page` (≥1).
+
+  **Version note:** this endpoint used to need `x-api-version: 2` for the slim
+  `{ id, code, name }` shape. That shape is now what `x-api-version: 1` returns,
+  and `2` no longer exists — send `1` like every other endpoint.

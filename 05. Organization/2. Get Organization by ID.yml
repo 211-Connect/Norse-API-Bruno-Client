@@ -1,0 +1,46 @@
+info:
+  name: 2. Get Organization by ID
+  type: http
+  seq: 2
+
+http:
+  method: get
+  url: "{{baseUrl}}/organization/:id"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: id
+      value: ORGANIZATION_ID
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Get Organization by ID
+
+  `GET /organization/:id` — the full organization record for an
+  `organization_id` from `GET /organization` or `GET /suggestion`. Tenant-scoped:
+  the organization must belong to `x-tenant-id`, otherwise `404`. CDN-cached
+  15 min.
+
+  The record is HSDS-shaped (UPPER_CASE nested keys): `name`, `alternateName`,
+  `email`, `website`, `phones[]`, `contacts[]`, `locations[]`, and `services[]`.
+  Each service carries `SERVICE_AT_LOCATIONS[]`, whose `ID` is the
+  `service_at_location_id` you pass to `GET /resource/:id` or
+  `POST /resource/batch` for the search-facing resource document.
+
+  Nested `TRANSLATIONS` arrays are filtered to the requested `accept-language`
+  (falling back to English, then the canonical locale).

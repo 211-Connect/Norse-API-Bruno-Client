@@ -37,4 +37,9 @@ docs: |-
   # Batch Get Resources
 
   `POST /resource/batch` — fetch up to 100 resources at once (partial success).
-  `ids`: string[] (1–100, each a UUID). CDN-cached 15 min.
+  `ids`: string[] (1–100, each a `service_at_location_id` UUID). CDN-cached
+  15 min.
+
+  **Gateway permissions:** `POST` counts as a write at the gateway, so your key
+  needs the *write* permission for this tenant; otherwise `403
+  tenant_scope_denied`.

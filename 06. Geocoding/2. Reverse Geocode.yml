@@ -11,6 +11,8 @@ http:
       value: "{{SERVICES_APIKEY}}"
     - name: x-api-version
       value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
   params:
     - name: coordinates
       value: "-74.006,40.7128"
@@ -31,3 +33,6 @@ docs: |-
 
   `GET /geocoding/reverse` — coordinates → address. `coordinates` required as
   `"longitude,latitude"`; `provider` `mapbox`|`opencage` (default mapbox).
+
+  **Note:** not tenant-scoped in its data, but the gateway still requires the
+  `x-tenant-id` header on this route (a tenant you hold a key for).

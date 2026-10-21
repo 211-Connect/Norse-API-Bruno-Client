@@ -10,9 +10,10 @@ docs:
   content: |-
     # Taxonomy
 
-    HSIS taxonomy tree lookups. **Tenant-scoped** (`x-tenant-id` + `accept-language`).
+    HSIS taxonomy lookups. **Tenant-scoped** (`x-tenant-id` + `accept-language`),
+    versioned `x-api-version: 1`.
 
-    - **Search** returns a slimmer `{ id, name, code }` shape — send
-      `x-api-version: 2`.
+    - **Search** returns the slim `{ id, code, name }` item shape with
+      `total`/`page` pagination.
     - **Get Terms** resolves exact taxonomy codes.
   type: text/markdown

@@ -10,6 +10,7 @@ docs:
   content: |-
     # Suggestion
 
-    Typeahead / autocomplete over taxonomy. **Tenant-scoped**
-    (`x-tenant-id` + `accept-language`), versioned `x-api-version: 1`.
+    Typeahead / autocomplete: taxonomy **and** organization matches in one
+    round trip. **Tenant-scoped** (`x-tenant-id` + `accept-language`),
+    versioned `x-api-version: 1`.
   type: text/markdown

@@ -10,7 +10,11 @@ docs:
   content: |-
     # Geocoding
 
-    Mapbox/Opencage geocoding wrappers. **Not** tenant-scoped, but the gateway
-    still requires your `X-API-Key`. Versioned `x-api-version: 1`. Responses
+    Mapbox/OpenCage geocoding wrappers. Versioned `x-api-version: 1`. Responses
     cached ~1 month.
+
+    The data is not tenant-specific, but through the gateway every
+    non-health route must name a tenant you hold a key for, so these requests
+    still send `x-tenant-id: {{tenantId}}` (omit it and you get
+    `400 tenant_target_required`).
   type: text/markdown

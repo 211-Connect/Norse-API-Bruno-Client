@@ -1,0 +1,91 @@
+info:
+  name: 6. Relevance Cutoff - sparse geography
+  type: http
+  seq: 6
+
+http:
+  method: get
+  url: "{{baseUrl}}/search?query=food&query_type=hybrid&relevance_cutoff=on&coords=-78.977900,39.648400&distance=40&geo_type=proximity&limit=25&sort=relevance"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: query
+      value: food
+      type: query
+    - name: query_type
+      value: hybrid
+      type: query
+    - name: relevance_cutoff
+      value: "on"
+      type: query
+    - name: coords
+      value: -78.977900,39.648400
+      type: query
+    - name: distance
+      value: "40"
+      type: query
+    - name: geo_type
+      value: proximity
+      type: query
+    - name: limit
+      value: "25"
+      type: query
+    - name: sort
+      value: relevance
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Relevance cutoff — sparse geography
+
+  Rural western Maryland (near Cumberland), 40 miles — a wider radius on purpose,
+  because in a sparse area people will travel much further for the right
+  resource. The companion to request 5: same query, same settings, different
+  geography.
+
+  ## What to look for
+
+  A response like this is **correct**, not a failure:
+
+  ```jsonc
+  "relevance_cutoff": {
+    "applied": false,
+    "reason": "no_elbow",
+    "kept": 120,
+    "matched_before_cutoff": 120,
+    "cutoff_score": null,
+    "candidates_examined": 120
+  }
+  ```
+
+  `reason` distinguishes three different non-cuts, and the difference matters:
+
+  | `reason` | Meaning |
+  |---|---|
+  | `no_elbow` | Nothing scored meaningfully below the threshold — the distribution is flat, so returning everything is the honest answer. |
+  | `below_min_keep` | The matched set is already smaller than the floor; nothing to trim. |
+  | `cut_too_large` | A cut point was located exactly, but it keeps more than 1,000 results, which is more than the API will enumerate. **"Found it, too big"**, not "could not find it". Nothing is trimmed. |
+
+  ## Why geography is not in the cut
+
+  The cutoff is computed on semantic and lexical relevance only; the proximity
+  term is deliberately excluded from the score it cuts on. Distance still filters
+  (`distance`, `geo_type`) and still ranks — it just doesn't get to decide what
+  counts as irrelevant. Someone here may happily drive 40 miles for the right
+  resource, and if proximity fed the cut, this is precisely the query where it
+  would go wrong: everything is far, the score range compresses, and the cut
+  would either vanish or land on a distance cliff rather than a relevance one.

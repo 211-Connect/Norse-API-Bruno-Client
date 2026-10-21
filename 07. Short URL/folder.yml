@@ -10,6 +10,9 @@ docs:
   content: |-
     # Short URL
 
-    Create and resolve short URLs. **Not** tenant-scoped, but the gateway still
-    requires your `X-API-Key`. Versioned `x-api-version: 1`.
+    Create and resolve short URLs. Versioned `x-api-version: 1`.
+
+    The data is not tenant-specific, but through the gateway every
+    non-health route must name a tenant you hold a key for, so these requests
+    still send `x-tenant-id: {{tenantId}}`.
   type: text/markdown

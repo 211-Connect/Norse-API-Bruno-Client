@@ -1,0 +1,92 @@
+info:
+  name: 5. Relevance Cutoff - dense geography
+  type: http
+  seq: 5
+
+http:
+  method: get
+  url: "{{baseUrl}}/search?query=food&query_type=hybrid&relevance_cutoff=on&coords=-76.612190,39.290386&distance=10&geo_type=proximity&limit=25&sort=relevance"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: query
+      value: food
+      type: query
+    - name: query_type
+      value: hybrid
+      type: query
+    - name: relevance_cutoff
+      value: "on"
+      type: query
+    - name: coords
+      value: -76.612190,39.290386
+      type: query
+    - name: distance
+      value: "10"
+      type: query
+    - name: geo_type
+      value: proximity
+      type: query
+    - name: limit
+      value: "25"
+      type: query
+    - name: sort
+      value: relevance
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Relevance cutoff — dense geography
+
+  Downtown Baltimore, 10 miles. Run this **next to request 6** (the sparse
+  counterpart, same query, same settings) — the pair exists because the two
+  geographies are expected to behave differently, and that difference is the
+  thing worth watching.
+
+  `relevance_cutoff` has two values: `off` (default, response unchanged) and
+  `on`. `on` keeps results scoring at least a fraction of the top score (0.2,
+  tightened stepwise up to 0.5 when more than 1,000 results would survive) and
+  never trims the top 20. Hybrid search only; ignored for other query types.
+
+  Read the `relevance_cutoff` block on the response:
+
+  ```jsonc
+  "relevance_cutoff": {
+    "applied": true,
+    "reason": null,
+    "kept": 18,
+    "matched_before_cutoff": 1234,   // what total would have been with cutoff=off
+    "cutoff_score": 81.5,            // probe-scale score — NOT comparable to hits[]._score
+    "candidates_examined": 18
+  }
+  ```
+
+  - `hits.total` reports the **kept** count when `applied` is true.
+  - `matched_before_cutoff` keeps the original number, so you can say
+    "18 of 1,234" rather than losing the fact that 1,234 matched.
+  - `cutoff_score` is computed on semantic + lexical relevance only (no distance
+    term), so it is systematically lower than `_score` in `hits`. Compare it
+    across responses, never against a `_score` in the same response.
+  - `applied: false` is **not** a failure — see request 6.
+
+  The cut is a membership filter, not a score threshold, so `sort=distance|name|
+  organization` still orders whatever survives. Try nudging `distance` by a
+  mile or two and re-running: the kept count should move only as
+  genuinely-relevant resources enter or leave the radius.
+
+  Set the param to `off` (or disable it) to confirm the response is the
+  historical one, with no `relevance_cutoff` key at all.

@@ -37,5 +37,14 @@ settings:
 docs: |-
   # Search Organizations
 
-  `GET /organization` — organization name prefix search. `query`, `page` (≥1),
-  `limit` (1–50, default 10).
+  `GET /organization` — organization name prefix search. `query` (required),
+  `page` (≥1), `limit` (1–50, default 10). Returns every organization in the
+  tenant, including ones with no published resources.
+
+  Response: `{ total, page, limit, hits: [{ _id, _score, _source }] }` where
+  `_source` has `organization_id`, `name`, `alternate_name`, `email`, `website`,
+  `phone`, `location { address_1, city, state, postal_code }`.
+
+  - `organization_id` is the stable id — pass it to `GET /organization/:id` for
+    the full record, or to `GET /search?organization_id=…` to list its
+    resources.

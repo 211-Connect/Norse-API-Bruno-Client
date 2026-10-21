@@ -27,6 +27,14 @@ http:
     - name: limit
       value: "25"
       type: query
+    - name: organization_id
+      value: ORGANIZATION_ID
+      type: query
+      disabled: true
+    - name: relevance_cutoff
+      value: "on"
+      type: query
+      disabled: true
   body:
     type: json
     data: |-
@@ -59,3 +67,8 @@ docs: |-
   (`geo_type=boundary`). Requires `Content-Type: application/json` (else `400`).
   Returns `200`. `geometry` accepts Point/MultiPoint/LineString/MultiLineString/
   Polygon/MultiPolygon.
+
+  **Gateway permissions:** `POST` counts as a write at the gateway, so your key
+  needs the *write* permission for this tenant. A `403 tenant_scope_denied` on
+  this request (while GET works) means your key is read-only — ask
+  help@connect211.com to add write access, or use **Search Resources (GET)**.

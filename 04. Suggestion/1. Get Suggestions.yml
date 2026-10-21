@@ -33,4 +33,19 @@ settings:
 docs: |-
   # Get Suggestions
 
-  `GET /suggestion` — typeahead taxonomy suggestions. `query` (≤500), `page` (≥1).
+  `GET /suggestion` — combined typeahead in one round trip. `query` (≤500),
+  `page` (≥1). Always returns both keys:
+
+  ```jsonc
+  {
+    "taxonomies":    [ { "id": "…", "code": "BH-1800", "name": "Housing" } ],
+    "organizations": [ { "organization_id": "…", "name": "Alpha Org", "city": "Chicago", "state": "IL" } ]
+  }
+  ```
+
+  - `organizations` is populated only for tenants that have organization search
+    enabled; otherwise it is `[]`. Organizations with no published resources are
+    never suggested.
+  - Feed `organization_id` to `GET /search?organization_id=…` to list or search
+    within that organization.
+  - Need only taxonomies, with pagination? Call `GET /taxonomy` directly.

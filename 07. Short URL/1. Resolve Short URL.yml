@@ -11,6 +11,8 @@ http:
       value: "{{SERVICES_APIKEY}}"
     - name: x-api-version
       value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
   params:
     - name: id
       value: SHORT_URL_ID
@@ -26,4 +28,5 @@ settings:
 docs: |-
   # Resolve Short URL
 
-  `GET /short-url/:id` — resolve a short URL id to its target.
+  `GET /short-url/:id` — resolve a short id (issued by `POST /short-url`) to
+  its original URL: `{ "url": "https://…" }`. `404` if unknown.

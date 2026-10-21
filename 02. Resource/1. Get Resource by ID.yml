@@ -31,5 +31,10 @@ settings:
 docs: |-
   # Get Resource by ID
 
-  `GET /resource/:id` — fetch a transformed resource by its (transformed) id.
-  Set the `id` path param. CDN-cached 15 min.
+  `GET /resource/:id` — fetch a resource (one service at one location) by its
+  `service_at_location_id` — the value from a search hit's
+  `_source.service_at_location_id`, **not** `_source.id`. CDN-cached 15 min.
+
+  Want the provider behind it? `GET /organization/service-at-location/:id`
+  with the same id. Want the whole service across all its locations?
+  `GET /service/:service_id`.

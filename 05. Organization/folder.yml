@@ -10,6 +10,7 @@ docs:
   content: |-
     # Organization
 
-    Organization typeahead search. **Tenant-scoped**
-    (`x-tenant-id` + `accept-language`), versioned `x-api-version: 1`.
+    Organization typeahead search and full-record lookups (by id, or by one of
+    its service-at-location ids). **Tenant-scoped** (`x-tenant-id` +
+    `accept-language`), versioned `x-api-version: 1`.
   type: text/markdown

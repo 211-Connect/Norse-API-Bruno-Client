@@ -1,0 +1,43 @@
+info:
+  name: 3. Get Organization by Service-at-Location
+  type: http
+  seq: 3
+
+http:
+  method: get
+  url: "{{baseUrl}}/organization/service-at-location/:salId"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: salId
+      value: SERVICE_AT_LOCATION_ID
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Get Organization by Service-at-Location
+
+  `GET /organization/service-at-location/:salId` — resolves the one
+  organization in `x-tenant-id` whose services carry this
+  `service_at_location_id` (the id from a search hit or `GET /resource/:id`).
+  Same response shape as **Get Organization by ID**. CDN-cached 15 min.
+
+  - `404` — no organization in this tenant carries the service-at-location.
+  - `409` — more than one organization in this tenant carries it (never a guess).
+
+  Use this when you have a resource and want its provider's full record; there
+  is no cross-tenant fallback.

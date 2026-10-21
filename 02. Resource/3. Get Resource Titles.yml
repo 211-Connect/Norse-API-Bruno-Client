@@ -37,4 +37,8 @@ docs: |-
   # Get Resource Titles
 
   `POST /resource/titles` — display titles for up to 100 resource UUIDs.
-  `ids`: string[] (1–100, each a UUID).
+  `ids`: string[] (1–100, each a `service_at_location_id` UUID).
+
+  **Gateway permissions:** `POST` counts as a write at the gateway, so your key
+  needs the *write* permission for this tenant; otherwise `403
+  tenant_scope_denied`.

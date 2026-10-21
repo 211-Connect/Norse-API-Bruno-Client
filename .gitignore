@@ -10,3 +10,5 @@ Thumbs.db
 
 # Local tooling
 .claude/
+# Local, per-developer environment (may hold real credentials)
+environments/Local Dev.yml

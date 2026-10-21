@@ -51,6 +51,14 @@ http:
       value: "30"
       type: query
       disabled: true
+    - name: organization_id
+      value: ORGANIZATION_ID
+      type: query
+      disabled: true
+    - name: relevance_cutoff
+      value: "on"
+      type: query
+      disabled: true
   auth: inherit
 
 settings:
@@ -64,5 +72,13 @@ docs: |-
   # Search Resources (GET)
 
   Primary resource search. Enable the disabled params (coords/distance/taxonomy/
-  geo_type/age) as needed. `limit` must be 25–300. For polygon/boundary search use
-  **Search Resources (POST)**.
+  geo_type/age/organization_id/relevance_cutoff) as needed. `limit` must be
+  25–300, and `page * limit` may not exceed 10,000 (with `limit=25` the last
+  page is 400). For polygon/boundary search use **Search Resources (POST)**.
+
+  - `organization_id` scopes results to one organization by the stable id that
+    `GET /organization` and `GET /suggestion` return. It composes with any
+    `query_type`; an empty `query` plus `organization_id` lists that
+    organization's resources.
+  - `relevance_cutoff` is opt-in and `off` by default — leave it disabled to get
+    the full result set. The only other value is `on`. See requests 5 and 6.

@@ -9,28 +9,30 @@ request:
 docs: |-
   # Search
 
-  Resource search backed by Elasticsearch, plus the AI classification/re-rank
-  proxy to the ML Broker.
+  Resource search, plus the AI classification/re-rank helpers.
 
   **Tenant-scoped** — every request sends `x-tenant-id: {{tenantId}}` and
   `accept-language: {{acceptLanguage}}`. **Versioned** `x-api-version: 1`.
   Every request through the gateway requires your `X-API-Key`.
 
-  ## `GET /search` query parameters (all optional)
+  ## `GET` / `POST /search` query parameters (all optional)
 
   | Param | Type | Default | Notes |
   |---|---|---|---|
-  | `query` | string | `''` | Free text, or comma list for taxonomy. |
-  | `query_type` | enum | `text` | `text` \| `taxonomy` \| `more_like_this` \| `hybrid`. |
-  | `page` | int | `1` | 1-based. |
-  | `coords` | string | — | `"lng,lat"`, e.g. `-120.740135,47.751076`. |
-  | `filters` | object | `{}` | `Record<string,string\|string[]>` (URL-encode JSON). |
-  | `taxonomy` | string[] | `[]` | Comma list, e.g. `BM-1400,BM-1700`. |
-  | `distance` | int (mi) | `0` | Only applies with `coords`. |
-  | `age` | int | — | Optional age filter. |
+  | `query` | string | `''` | Free text; comma list of HSIS codes when `query_type=taxonomy`; or a JSON `{AND:[...],OR:[...]}` object for compound queries. |
+  | `query_type` | enum | `text` | `text` \| `taxonomy` \| `more_like_this` \| `hybrid` (recommended). |
+  | `page` | int | `1` | 1-based. `page * limit` ≤ 10,000. |
   | `limit` | int | `25` | Min **25**, max **300**. |
-  | `geo_type` | enum | — | `boundary` \| `proximity`. `boundary` needs POST geometry. |
+  | `coords` | string | — | `"lng,lat"`, e.g. `-120.740135,47.751076`. |
+  | `distance` | int (mi) | `0` | Only applies with `coords`. |
+  | `geo_type` | enum | — | Omitted: within `distance` **and** service area contains `coords`. `proximity`: distance only. `boundary`: POST body `geometry` intersects the service area. |
+  | `taxonomy` | string[] | `[]` | Comma list, e.g. `BM-1400,BM-1700`. Hard scope for hybrid search. |
+  | `organization_id` | string | — | Scope to one organization by its stable id (from `/organization` or `/suggestion`). Composes with any `query_type`. |
+  | `filters` | object | `{}` | `filters[<facetKey>][<i>]=<value>`. |
+  | `age` | int | — | Age eligibility filter. |
   | `sort` | enum | `relevance` | `relevance` \| `distance` \| `name` \| `organization`. |
+  | `relevance_cutoff` | enum | `off` | Opt-in. `off` \| `on`. Hybrid only. See requests 5 & 6. |
 
   `GET` with `geo_type=boundary` returns `400` — use `POST /search` with a GeoJSON
-  `geometry` body instead.
+  `geometry` body instead. `POST` counts as a *write* at the gateway and needs
+  the write permission on your key (see request 2).

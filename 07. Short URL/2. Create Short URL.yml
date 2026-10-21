@@ -11,6 +11,8 @@ http:
       value: "{{SERVICES_APIKEY}}"
     - name: x-api-version
       value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
     - name: Content-Type
       value: application/json
   body:
@@ -30,4 +32,9 @@ settings:
 docs: |-
   # Create Short URL
 
-  `POST /short-url` — get-or-create a short URL for `url`.
+  `POST /short-url` — get-or-create a short URL for `url` (absolute `http(s)`
+  URL). Returns `{ "url": "<fully-qualified short URL>" }`.
+
+  **Gateway permissions:** `POST` counts as a write, so your key needs the
+  *write* permission for the tenant in `x-tenant-id`; otherwise
+  `403 tenant_scope_denied`.

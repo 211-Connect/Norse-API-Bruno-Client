@@ -33,9 +33,15 @@ Every request sends four headers:
 | Header | Value | Notes |
 |---|---|---|
 | `X-API-Key` | `$SERVICES_APIKEY` | Missing/invalid → `401`. |
-| `x-tenant-id` | `$TENANT_ID` | Required on tenant-scoped routes. Missing → `400`. |
-| `x-api-version` | latest per endpoint (see below) | **Versioning is by header, not URL.** |
+| `x-tenant-id` | `$TENANT_ID` | Required on every route except `/health` (even geocoding / short-url). Missing → `400 tenant_target_required`; a tenant your key lacks → `403 tenant_scope_denied`. |
+| `x-api-version` | `1` | **Versioning is by header, not URL.** |
 | `accept-language` | `en`, `es`, … | Drives localized fields. |
+
+> **`POST` needs write access.** The gateway treats every `POST` as a write and
+> requires the *write* permission for the tenant on your key. Keys are
+> read-only unless you ask for write when provisioning. A `403` on
+> `POST /search`, `/resource/batch`, `/resource/titles` or `/short-url` while
+> `GET` works is that, not a bug.
 
 A reusable header array for the examples:
 
@@ -44,19 +50,14 @@ H=(-H "X-API-Key: $SERVICES_APIKEY" -H "x-tenant-id: $TENANT_ID" \
    -H "x-api-version: 1" -H "accept-language: en")
 ```
 
-### Always use the latest version an endpoint supports
+### Versions
 
-Versioning is per-endpoint, selected by the `x-api-version` header. Send the
-**highest version the endpoint offers** — newer versions return cleaner, more
-stable shapes.
-
-| Endpoint | Version to use |
-|---|---|
-| `/taxonomy` | **v2** |
-| `/search`, `/resource`, `/suggestion`, `/organization`, `/geocoding` | v1 |
-
-Today, **taxonomy uses v2**; every other endpoint is v1-only, so v1 *is* the
-latest there. If a new version ships for an endpoint you use, move to it.
+Versioning is per-endpoint, selected by the `x-api-version` header. Today
+**every endpoint is `1`** — send it on every request. (`/taxonomy` used to need
+`2` for its slim `{ id, code, name }` shape; that is now what `1` returns and
+`2` no longer exists.) If a new version ships for an endpoint you use, the
+live OpenAPI document at
+<https://services.c211.io/norse-api/v1/swagger> is where it will appear first.
 
 ---
 
@@ -88,13 +89,19 @@ The API returns a resource in **two different shapes** depending on the endpoint
   `attribute_values`, nested `service` / `location` / `organization`.
 
 - **Resource detail** (`GET /resource/{id}`): richer, `camelCase`, with a nested
-  localized `translation{}` block. Fields: `_id`, `originalId`, `displayName`,
-  `displayPhoneNumber`, `website`, `organizationUrl`, `email`, `organizationName`,
+  localized `translation{}` block. Fields: `_id`, `serviceAtLocationId`,
+  `originalId`, `displayName`, `displayPhoneNumber`, `website`,
+  `organizationUrl`, `email`, `organizationName`, `organizationAlternateName`,
   `locationName`, `location{type,coordinates}`, `addresses[]`, `phoneNumbers[]`,
-  `contacts[]`, `languages[]`, `serviceArea` + `serviceAreaName`, `minimumAge` /
-  `maximumAge`, `lastAssuredDate`, `attribution`, `facetsEn[]`, and
-  `translation{}`. **Prefer `translation.*`** (localized) over the top-level
-  fields when present.
+  `languages[]`, `serviceArea` + `serviceAreaName`, `lastAssuredDate`,
+  `attribution`, `facetsEn[]`, and `translation{}` (which carries the localized
+  copy plus `contacts[]`, `phoneNumbers[]`, `taxonomies[]`, `facets[]`,
+  `eligibilities`, `fees`, `hours`, …). **Prefer `translation.*`** (localized)
+  over the top-level fields when present.
+
+Two more record shapes exist for the *provider* side — the HSDS
+**organization** (`GET /organization/{id}`) and **service**
+(`GET /service/{id}`) records — see [Recipe 7](#recipe-7--organizations--service-records).
 
 ---
 
@@ -103,7 +110,7 @@ The API returns a resource in **two different shapes** depending on the endpoint
 ```
 (1) typeahead        (2) search              (3) detail
 GET /taxonomy  ─────► GET /search   ─────►    GET /resource/{service_at_location_id}
-(x-api-version: 2)    (x-api-version: 1)       (x-api-version: 1)
+(x-api-version: 1)    (x-api-version: 1)       (x-api-version: 1)
    pick a code           hits[]._source           full localized record
 ```
 
@@ -149,9 +156,59 @@ Response (trimmed) — note the **double `hits`** nesting and the id fields:
 ```
 
 - Total matches: `search.hits.total.value`. Result array: `search.hits.hits[]`.
-- `limit` must be **25–300** (a smaller value errors). Paginate with `page`.
+- `limit` must be **25–300** (a smaller value errors). Paginate with `page`;
+  `page * limit` may not exceed **10,000** (with `limit=25`, the last page is 400).
 - `query_type`: **`hybrid`** (recommended) · `text` · `taxonomy` · `more_like_this`.
 - `sort`: `relevance` (default) · `distance` · `name` · `organization`.
+
+### Too many results? `relevance_cutoff=on` (opt-in)
+
+A broad query can match well over a thousand resources, which is more than
+anyone will review. `relevance_cutoff=on` trims results that score far below
+the best match (hybrid search only):
+
+```bash
+curl -s "${H[@]}" \
+  "$BASE/search?query=food&query_type=hybrid&relevance_cutoff=on&limit=25"
+```
+
+```jsonc
+{
+  "search": { "hits": { "total": { "value": 18 }, "hits": [ /* ... */ ] } },
+  "relevance_cutoff": {
+    "applied": true,
+    "reason": null,
+    "kept": 18,
+    "matched_before_cutoff": 1234,
+    "cutoff_score": 81.5,
+    "candidates_examined": 18
+  }
+}
+```
+
+**This changes what `hits.total.value` means, but only when you ask for it.**
+With a cutoff applied it is the *kept* count (18 above); the number the query
+actually matched moves to `relevance_cutoff.matched_before_cutoff` (1,234), so
+you can still show "18 of 1,234". Omit the param (or send `off`) and everything
+is exactly as documented above — same totals, and no `relevance_cutoff` key in
+the response.
+
+How `on` decides: it keeps results scoring at least 20% of the top score
+(tightened stepwise up to 50% when more than 1,000 results would survive) and
+never removes the top 20. `applied: false` is a normal outcome, not an error,
+and `reason` says why:
+
+| `reason` | Meaning |
+|---|---|
+| `no_elbow` | The scores are flat — nothing scored meaningfully below the threshold, so returning everything is the honest answer. |
+| `below_min_keep` | The matched set is already small. |
+| `cut_too_large` | A cut point was found but would keep more than 1,000 results, which the API will not enumerate. Nothing is trimmed. |
+
+`cutoff_score` is on a different scale from `hits[]._score` (it excludes the
+distance and pinning terms), so compare it across responses, never against a
+hit's `_score`. The cut is computed on semantic/lexical relevance only.
+Proximity still filters and ranks, but never decides relevance: how far
+someone will travel is their choice, not a property of the resource.
 
 For a vague natural-language need where you'd rather *classify* the intent and
 possibly ask the user to clarify before searching, see the
@@ -193,12 +250,10 @@ curl -g -s "${H[@]}" \
 
 Norse is a taxonomy-driven directory (HSIS codes like `BH-3700`). Two steps:
 
-**a) Typeahead** as the user types — use **`x-api-version: 2`** for the clean list:
+**a) Typeahead** as the user types:
 
 ```bash
-curl -s -H "X-API-Key: $SERVICES_APIKEY" -H "x-tenant-id: $TENANT_ID" \
-     -H "x-api-version: 2" -H "accept-language: en" \
-     "$BASE/taxonomy?query=housing&page=1"
+curl -s "${H[@]}" "$BASE/taxonomy?query=housing&page=1"
 ```
 
 ```jsonc
@@ -220,7 +275,11 @@ curl -s "${H[@]}" \
 > [parameter reference](#search-parameter-reference-search-get--post).)
 
 `GET /suggestion?query=food` is a related helper that returns
-`{ taxonomies[], organizations[] }` for mixed typeahead.
+`{ taxonomies[], organizations[] }` for mixed typeahead — the same taxonomy
+items plus `{ organization_id, name, city, state }` organization matches
+(only for tenants with organization search enabled; otherwise `[]`). See
+[Recipe 7](#recipe-7--organizations--service-records) for what to do with an
+`organization_id`.
 
 ---
 
@@ -312,7 +371,8 @@ Two search shapes cover almost everything:
 
 > ### 🔭 New integrations: prefer `POST /search`
 > `GET` and `POST /search` accept the same query params and return the same
-> shape, but **only `POST` carries a JSON body**. Geographic capability is moving
+> shape, but **only `POST` carries a JSON body**. (`POST` needs the *write*
+> permission on your key — see [Setup](#setup).) Geographic capability is moving
 > into that body: today it takes a GeoJSON `geometry` for boundary search, and it
 > will increasingly accept **richer GeoJSON for custom area filtering and other
 > features that can't fit in a query string or header**. Build new integrations
@@ -346,6 +406,10 @@ curl -s "${H[@]}" \
 ```
 
 - `provider`: `mapbox` (default) or `opencage`. `limit`: 1–10.
+- Mapbox only: `types=address,poi` restricts feature types (`country`, `region`,
+  `postcode`, `district`, `place`, `locality`, `neighborhood`, `address`, `poi`;
+  a `400` with OpenCage), and `proximity=lng,lat` biases results toward a point
+  (ignored by OpenCage).
 - `coordinates` is **`[lng, lat]`** — use it directly for proximity `coords`.
 - `place_type` tells you the granularity. A **point-like** result
   (`address`/`postcode`) → use **proximity**. An **area-like** result
@@ -547,34 +611,109 @@ GET /search/predict
 
 ---
 
+## Recipe 7 — Organizations & service records
+
+Search hits are *service-at-location* records. The provider side has its own
+endpoints when you need the whole organization or the whole service.
+
+**a) Find an organization** (prefix typeahead, every org in the tenant):
+
+```bash
+curl -s "${H[@]}" "$BASE/organization?query=food%20bank&page=1&limit=10"
+```
+
+```jsonc
+{ "total": 3, "page": 1, "limit": 10,
+  "hits": [ { "_id": "…", "_score": 12.1,
+              "_source": { "organization_id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+                           "name": "Example Food Bank", "alternate_name": null,
+                           "email": "info@example.org", "website": "https://example.org",
+                           "phone": "555-0100",
+                           "location": { "address_1": "100 Example Ave", "city": "Anytown",
+                                         "state": "CA", "postal_code": "90000" } } } ] }
+```
+
+**b) List or search that organization's resources** — `organization_id` is a
+scope on `/search` that composes with any `query_type` (an empty `query` lists
+everything):
+
+```bash
+ORG="dddddddd-dddd-dddd-dddd-dddddddddddd"
+curl -s "${H[@]}" "$BASE/search?query=&organization_id=$ORG&limit=25"
+curl -s "${H[@]}" "$BASE/search?query=pantry&query_type=hybrid&organization_id=$ORG&limit=25"
+```
+
+**c) The full organization record** (HSDS-shaped, UPPER_CASE nested keys:
+`phones[]`, `contacts[]`, `locations[]`, `services[]` each with
+`SERVICE_AT_LOCATIONS[]`):
+
+```bash
+curl -s "${H[@]}" "$BASE/organization/$ORG"
+```
+
+`services[].SERVICE_AT_LOCATIONS[].ID` is a `service_at_location_id` — feed it
+to `GET /resource/{id}` or `POST /resource/batch` for the search-facing document.
+
+**d) From a resource back to its organization** — when all you have is a
+`service_at_location_id`:
+
+```bash
+curl -s "${H[@]}" "$BASE/organization/service-at-location/$SAL"
+# 404 → no org in this tenant carries it · 409 → more than one does (never a guess)
+```
+
+**e) The HSDS service record** — one service across *all* its locations, by
+`service_id` (from a search hit's `_source.service_id`; not the
+service-at-location id):
+
+```bash
+SERVICE_ID="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"   # _source.service_id from a search hit
+curl -s "${H[@]}" "$BASE/service/$SERVICE_ID"
+```
+
+Returns `serviceId`, `name`, `description`, `eligibilityDescription`,
+`applicationProcess`, `minimumAge`/`maximumAge`, `organization{}`,
+`locations[]`, `phones[]`, `schedules[]`, `languages[]`, `serviceAreas[]`,
+`costOptions[]`, `requiredDocuments[]`, `taxonomyCodes[]`, `taxonomyPath[]`.
+Nested `TRANSLATIONS` arrays on both records are filtered to `accept-language`,
+falling back to English, then the canonical locale.
+
+---
+
 ## Search parameter reference (`/search`, GET & POST)
 
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `query` | string | `""` | Free text; **or comma-separated HSIS codes when `query_type=taxonomy`** (that's how you search *by* codes). |
 | `query_type` | enum | `text` | **`hybrid`** recommended (semantic + keyword). Also `text` (exact/agency, being phased out) · `taxonomy` (treats `query` as HSIS codes) · `more_like_this`. |
-| `page` | int ≥1 | `1` | 1-based. |
+| `page` | int ≥1 | `1` | 1-based. `page * limit` ≤ 10,000. |
 | `limit` | int | `25` | **25–300** (below 25 errors). |
 | `taxonomy` | string/CSV | — | Optional **scope filter** to narrow a text/hybrid search to these HSIS codes (e.g. `BM-1400,BM-1700`). To search purely *by* codes, use `query`+`query_type=taxonomy` instead. |
+| `organization_id` | string | — | Scope results to one organization by its stable id (from `/organization` or `/suggestion`). Composes with any `query_type` and every other param. |
 | `coords` | string | — | **`lng,lat`**, e.g. `-73.9857,40.7484`. |
 | `distance` | int (mi) | `0` | Only with `coords`. |
 | `geo_type` | enum | — | `proximity` · `boundary` (boundary → POST body geometry). |
 | `filters` | bracket obj | `{}` | `filters[<key>][<i>]=<value>`. |
 | `age` | int ≥0 | — | Age eligibility filter. |
 | `sort` | enum | `relevance` | `relevance` · `distance` · `name` · `organization`. |
+| `relevance_cutoff` | enum | `off` | **Opt-in**, hybrid only. `on` keeps results scoring ≥ 20% of the top score (never trimming the top 20) and returns everything when the scores are flat. Adds a `relevance_cutoff` block to the response and makes `hits.total` the *kept* count. |
 
 ---
 
 ## Versioning & errors
 
-- **Version by header** (`x-api-version`), latest per endpoint: **`2`** for
-  `/taxonomy`; `1` for everything else (see
-  [Always use the latest version](#always-use-the-latest-version-an-endpoint-supports)).
+- **Version by header** (`x-api-version`): `1` for every endpoint (see
+  [Versions](#versions)).
 - `401` — missing/invalid `X-API-Key`.
-- `400` — missing/invalid `x-tenant-id` (on tenant-scoped routes) or a bad param
-  (e.g. `limit` < 25).
+- `400` — missing/invalid `x-tenant-id` (`tenant_target_required` /
+  `tenant_target_invalid`), or a bad param (e.g. `limit` < 25, `page * limit`
+  > 10,000, `geo_type=boundary` on `GET`).
+- `403 tenant_scope_denied` — your key is not provisioned for that tenant, or
+  it is read-only and you sent a `POST`.
 - `404` — resource not found — **most often because you used `_source.id`
   instead of `service_at_location_id`** (see the gotcha above).
+- `409` — `GET /organization/service-at-location/{id}` found more than one
+  organization carrying that id in the tenant.
 
 ---
 
@@ -585,7 +724,8 @@ GET /search/predict
 | Find (text/taxonomy/geo) | `GET`/`POST` `/search` | `01. Search` |
 | Get details | `GET /resource/{id}`, `/resource/original/{id}` | `02. Resource` |
 | Batch / titles | `POST /resource/batch`, `/resource/titles` | `02. Resource` |
-| Typeahead codes | `GET /taxonomy` (v2), `/suggestion` | `03. Taxonomy`, `04. Suggestion` |
-| Org typeahead | `GET /organization` | `05. Organization` |
+| Typeahead codes | `GET /taxonomy`, `/suggestion` | `03. Taxonomy`, `04. Suggestion` |
+| Org typeahead / record | `GET /organization`, `/organization/{id}`, `/organization/service-at-location/{salId}` | `05. Organization` |
+| Service record | `GET /service/{id}` | `08. Service` |
 | Geocode | `GET /geocoding/forward` · `/reverse` | `06. Geocoding` |
 | AI need → codes | `GET /search/predict` · `/re-rank` | `01. Search` |

@@ -1,0 +1,49 @@
+info:
+  name: 1. Get Service by ID
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{baseUrl}}/service/:id"
+  headers:
+    - name: X-API-Key
+      value: "{{SERVICES_APIKEY}}"
+    - name: x-api-version
+      value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
+    - name: accept-language
+      value: "{{acceptLanguage}}"
+  params:
+    - name: id
+      value: SERVICE_ID
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+docs: |-
+  # Get Service by ID
+
+  `GET /service/:id` — the HSDS **service** record (one service, every location
+  it is delivered at) by its `serviceId`. That is the `service_id` on a search
+  hit — *not* the `service_at_location_id`, which identifies one
+  service-at-one-location and belongs to `GET /resource/:id`.
+
+  Tenant-scoped: `404` if the service is not in `x-tenant-id`. CDN-cached 15 min.
+
+  Response (camelCase top level, HSDS UPPER_CASE nested): `serviceId`, `name`,
+  `alternateName`, `description`, `url`, `email`, `status`,
+  `applicationProcess`, `eligibilityDescription`, `minimumAge`/`maximumAge`,
+  `organization{}`, `locations[]` (each with `ADDRESSES`, `PHONES`,
+  `SCHEDULES`, …), `phones[]`, `schedules[]`, `languages[]`, `serviceAreas[]`,
+  `costOptions[]`, `requiredDocuments[]`, `taxonomyCodes[]`, `taxonomyPath[]`.
+
+  `accept-language` selects which `TRANSLATIONS` entries are returned, falling
+  back to English, then the canonical locale.

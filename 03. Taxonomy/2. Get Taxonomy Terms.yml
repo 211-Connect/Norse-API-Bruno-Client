@@ -1,7 +1,7 @@
 info:
-  name: 3. Get Taxonomy Terms
+  name: 2. Get Taxonomy Terms
   type: http
-  seq: 3
+  seq: 2
 
 http:
   method: get
@@ -31,5 +31,5 @@ settings:
 docs: |-
   # Get Taxonomy Terms
 
-  `GET /taxonomy/term` — resolve exact taxonomy codes. Repeat `terms` per code
-  (e.g. `?terms=BM-1400&terms=BM-1700`).
+  `GET /taxonomy/term` — resolve exact taxonomy codes. Pass `terms` as a comma
+  list or repeat it per code (e.g. `?terms=BM-1400&terms=BM-1700`).

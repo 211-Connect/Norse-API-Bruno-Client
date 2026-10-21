@@ -11,6 +11,8 @@ http:
       value: "{{SERVICES_APIKEY}}"
     - name: x-api-version
       value: "1"
+    - name: x-tenant-id
+      value: "{{tenantId}}"
   params:
     - name: address
       value: "123 Main St, New York, NY"
@@ -21,6 +23,14 @@ http:
     - name: limit
       value: "5"
       type: query
+    - name: types
+      value: address,poi
+      type: query
+      disabled: true
+    - name: proximity
+      value: "-78.8986,35.994"
+      type: query
+      disabled: true
   auth: inherit
 
 settings:
@@ -34,3 +44,16 @@ docs: |-
 
   `GET /geocoding/forward` — address → coordinates. `address` required;
   `provider` `mapbox`|`opencage` (default mapbox); `limit` 1–10 (default 5).
+
+  Mapbox-only extras (enable the disabled params):
+
+  - `types` — restrict result feature types, comma-separated or repeated:
+    `country`, `region`, `postcode`, `district`, `place`, `locality`,
+    `neighborhood`, `address`, `poi`. With `provider=opencage` this is a `400`.
+  - `proximity` — bias results toward `"lng,lat"`. OpenCage ignores it.
+
+  Each result carries `coordinates` as **`[lng, lat]`**, `place_type[]`, and
+  (for area-like results) a `bbox` `[minLng, minLat, maxLng, maxLat]`.
+
+  **Note:** not tenant-scoped in its data, but the gateway still requires the
+  `x-tenant-id` header on this route (a tenant you hold a key for).

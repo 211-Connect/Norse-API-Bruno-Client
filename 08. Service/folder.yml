@@ -1,0 +1,15 @@
+info:
+  name: 08. Service
+  type: folder
+  seq: 9
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    # Service
+
+    HSDS service detail by `serviceId`. **Tenant-scoped** (`x-tenant-id` +
+    `accept-language`), versioned `x-api-version: 1`.
+  type: text/markdown
